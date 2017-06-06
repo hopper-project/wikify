@@ -1,4 +1,3 @@
-#!/usr/bin/env python 2
 # -*- coding: utf-8 -*-
 
 import os
@@ -116,6 +115,7 @@ def main():
     args = parser.parse_args()
     input_path = args.input_path
     output_dir = args.output_dir
+    os.makedirs(output_dir)
     pool = mp.Pool(processes = mp.cpu_count())
 
     all_anchors = {}

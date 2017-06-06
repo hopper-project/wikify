@@ -1,17 +1,4 @@
-#!/usr/bin/env python 2
-
-##############
-## Anchor-Title Index Preprocessor
-## Written by Jeremiah Milbauer for Hopper Project @ UChicago
-## Version: June 14, 2015
-#######
-## This program runs on a dataset of raw wikipedia files (in XML format)
-## It produces a large number of xml files for all of wikipedia
-##############
-## Thursday: Have things preprocessed, fix the extractor.
-## Run the extractor on half of the preprocessor.
-#######
-
+import argparse
 import datetime as d
 import os
 import sys
@@ -89,20 +76,6 @@ def main(i_path, o_path):
         dump_buffer(multi_page_buffer, o_path)
 
     fp.close()
-    #
-    # wikipedia = fp.read()
-    # soup = BeautifulSoup(wikipedia)
-    # fp.close()
-    #
-    # all_articles_xml = soup.find_all('page')
-    # for page_xml in all_articles_xml:
-    #     if pagetype_check(page_xml) and sci_check(page_xml):
-    #         page_buffer += page_xml.prettify()
-    #         buffercount += 1
-    #     if buffercount == 100:
-    #         dump_buffer(page_buffer, o_path)
-    #         buffercount = 0
-    # dump_buffer(page_buffer, o_path)
     print_report()
     sys.exit(0)
 
@@ -144,17 +117,86 @@ def sci_check(file_xml):
         GLOBAL_TOTAL_PAGES += 1
         return False
 
-if __name__ == '__main__':
-    if len(sys.argv) == 3:
-        input_path = sys.argv[1]
-        output_dir = sys.argv[2] #directory of output directories.
-    else:
-        sys.stderr.write("Formatting/Usage error.\n")
-        sys.exit(1)
 
-    today = d.datetime.today()
-    unique_id = today.strftime("%Y-%m-%d-%Hh-%Mm-%Ss") #for some reason my syntax highlighting makes the 'h' seem like a format char.
+
+def main():
+    global GLOBAL_PAGES_PER_FILE
+    parser = argparse.ArgumentParser(
+    description='Converts wikipedia XML dump to list of XML Files'
+    )
+    parser.add_argument('input_path', help='Input directory')
+    parser.add_argument('output_dir', help='Path to directory of output folders')
+    args = parser.parse_args()
+    input_path = args.input_path
+    output_dir = args.output_dir
+    today = d.datetime.now()
+    unique_id = today.strftime("%Y-%m-%d-%Hh-%Mm-%Ss")
     output_path = os.path.join(output_dir, unique_id)
-    os.mkdir(output_path)
+    os.makedirs(output_path)
 
-    main(input_path, output_path)
+    page_buffer = ""
+    multi_page_buffer = ""
+    buffercount = 0
+    fp = open(input_path)
+    header = "<page>"
+    footer = "</page>"
+    index = 0
+    inside = False
+    mini_buffer = ""
+    page_read_cycler = 0
+    while True:
+        if page_read_cycler == 1000:
+            print_report()
+            page_read_cycler = 0
+        char = fp.read(1)
+        if not char:
+            break
+        if not inside:
+            if char == header[index]:
+                index += 1
+                mini_buffer += char
+                if mini_buffer == header:
+                    page_buffer += mini_buffer
+                    index = 0
+                    mini_buffer = ""
+                    inside = True
+            else:
+                index = 0
+                mini_buffer = ""
+        else:
+            if char == footer[index]:
+                index += 1
+                mini_buffer += char
+                if mini_buffer == footer:
+                    page_buffer += mini_buffer
+                    index = 0
+                    mini_buffer = ""
+                    if sci_check(page_buffer):
+                        multi_page_buffer += page_buffer
+                        buffercount += 1
+                    page_buffer = ""
+                    page_read_cycler += 1
+                    if buffercount >= GLOBAL_PAGES_PER_FILE:
+                        #print(multi_page_buffer)
+                        dump_buffer(multi_page_buffer, output_path)
+                        multi_page_buffer = ""
+                        buffercount = 0
+                    inside = False
+            else:
+                page_buffer += mini_buffer
+                page_buffer += char
+                index = 0
+                mini_buffer = ""
+    if len(multi_page_buffer) != 0:
+        dump_buffer(multi_page_buffer, output_path)
+
+    fp.close()
+    print_report()
+    sys.exit(0)
+
+
+if sys.flags.interactive:
+    pass
+else:
+    if __name__=='__main__':
+        main()

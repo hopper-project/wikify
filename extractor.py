@@ -116,7 +116,7 @@ def main():
     args = parser.parse_args()
     input_path = args.input_path
     output_path = args.output_path
-    os.makedirs(output_dir)
+    os.makedirs(output_path)
     pool = mp.Pool(processes = mp.cpu_count())
 
     all_anchors = {}

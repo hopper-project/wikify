@@ -115,7 +115,7 @@ def main():
     help='Directory to store the extracted maps')
     args = parser.parse_args()
     input_path = args.input_path
-    output_dir = args.output_dir
+    output_path = args.output_path
     os.makedirs(output_dir)
     pool = mp.Pool(processes = mp.cpu_count())
 

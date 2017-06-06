@@ -148,45 +148,47 @@ def main():
         if page_read_cycler == 1000:
             print_report()
             page_read_cycler = 0
-        char = fp.read(1)
-        if not char:
+        charlist = fp.read(10000)
+        if not charlist:
             break
-        if not inside:
-            if char == header[index]:
-                index += 1
-                mini_buffer += char
-                if mini_buffer == header:
-                    page_buffer += mini_buffer
+        for char in charlist:
+            if not inside:
+                if char == header[index]:
+                    index += 1
+                    mini_buffer += char
+                    if mini_buffer == header:
+                        page_buffer += mini_buffer
+                        index = 0
+                        mini_buffer = ""
+                        inside = True
+                else:
                     index = 0
                     mini_buffer = ""
-                    inside = True
             else:
-                index = 0
-                mini_buffer = ""
-        else:
-            if char == footer[index]:
-                index += 1
-                mini_buffer += char
-                if mini_buffer == footer:
+                if char == footer[index]:
+                    index += 1
+                    mini_buffer += char
+                    if mini_buffer == footer:
+                        page_buffer += mini_buffer
+                        index = 0
+                        mini_buffer = ""
+                        if sci_check(page_buffer):
+                            multi_page_buffer += page_buffer
+                            buffercount += 1
+                        page_buffer = ""
+                        page_read_cycler += 1
+                        if buffercount >= GLOBAL_PAGES_PER_FILE:
+                            #print(multi_page_buffer)
+                            dump_buffer(multi_page_buffer, output_path)
+                            multi_page_buffer = ""
+                            buffercount = 0
+                        inside = False
+                else:
                     page_buffer += mini_buffer
+                    page_buffer += char
                     index = 0
                     mini_buffer = ""
-                    if sci_check(page_buffer):
-                        multi_page_buffer += page_buffer
-                        buffercount += 1
-                    page_buffer = ""
-                    page_read_cycler += 1
-                    if buffercount >= GLOBAL_PAGES_PER_FILE:
-                        #print(multi_page_buffer)
-                        dump_buffer(multi_page_buffer, output_path)
-                        multi_page_buffer = ""
-                        buffercount = 0
-                    inside = False
-            else:
-                page_buffer += mini_buffer
-                page_buffer += char
-                index = 0
-                mini_buffer = ""
+
     if len(multi_page_buffer) != 0:
         dump_buffer(multi_page_buffer, output_path)
 

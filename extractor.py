@@ -104,14 +104,24 @@ def build_ranking(dictionary):
         result[key] = sorted_tuples
     return result
 
-def main(input_path, output_path):
-    allfiles = os.listdir(input_path)
-    allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
 
-    pool = mp.Pool(processes=mp.cpu_count())
-    shallow_articles = pool.map(processFile, allpaths) #returns a list from mapping.
+def main():
+    parser = argparse.ArgumentParser(
+    description='Converts xml wikipedia dump files to maps'
+    )
+    parser.add_argument('input_path',
+    help='Input directory of wikipedia dump files from preprocessor.py')
+    parser.add_argument('output_path',
+    help='Directory to store the extracted maps')
+    args = parser.parse_args()
+    input_path = args.input_path
+    output_dir = args.output_dir
+    pool = mp.Pool(processes = mp.cpu_count())
 
-    #shallow_articles = map(processFile, allpaths)   #[path] -> [[(anchor, title)]]
+    all_anchors = {}
+
+    shallow_articles = pool.map(processFile, allpaths)
+
     merged_articles = flatten_list(shallow_articles) #[[(anchor, title)]] -> [(anchor, title)]
     anchor_title_map = build_hashmap(merged_articles) #[(anchor, title)] -> { anchor : {title : freq}}
 
@@ -130,17 +140,13 @@ def main(input_path, output_path):
     pickle.dump(ranking, fp)
     fp.close()
 
+    pool.close()
+    pool.join()
+
     sys.exit(0)
 
-
-if __name__ == '__main__':
-    if len(sys.argv) == 3:
-        input_path = sys.argv[1]
-        output_path = sys.argv[2]
-    else:
-        sys.stderr.write("Usage : python {} input_path output_path\n"
-                         "\t* The input path should be a directory containing the xml wikipedia dump files of type \"pages-articles\"\n"
-                         "\t* The output path should be where you want the extracted maps to be stored.\n".format(sys.argv[0]))
-        sys.exit(1)
-    all_anchors = {}
-    main(input_path, output_path)
+if sys.flags.interactive:
+    pass
+else:
+    if __name__=='__main__':
+        main()

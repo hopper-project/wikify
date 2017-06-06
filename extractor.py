@@ -117,6 +117,8 @@ def main():
     input_path = args.input_path
     output_path = args.output_path
     os.makedirs(output_path)
+    allfiles = os.listdir(input_path)
+    allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
     pool = mp.Pool(processes = mp.cpu_count())
 
     all_anchors = {}

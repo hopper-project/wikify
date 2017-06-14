@@ -1,6 +1,6 @@
 import sys
 import os
-import cPickle as pickle
+import pickle
 
 def main():
     parser = argparse.ArgumentParser(

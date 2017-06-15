@@ -51,7 +51,7 @@ def find_anchors_tex(file_path):
     article_anchors = {} # {anchor : freq}
     for end_index, (anchor, title) in ahc_automaton.iter(haystack):
         start_index = end_index-len(anchor)+1
-        if anchor in article_anchors.keys():
+        if anchor in set(article_anchors.keys()):
             article_anchors[anchor] += 1
         else:
             article_anchors[anchor] = 1
@@ -61,7 +61,7 @@ def find_anchors_tex(file_path):
     basename, ext = os.path.splitext(fname)
     output_path = os.path.join(folder, os.path.splitext(fname)[0]+'.tsv')
     with open(output_path, 'w') as fh:
-        for anchor in article_anchors.keys():
+        for anchor in list(article_anchors.keys()):
             fh.write("{}\t{}\t{}\t{}".format(basename, anchor,
             article_anchors[anchor], topranks[anchor][1]))
 

@@ -174,7 +174,7 @@ def main():
                 if fname.endswith('.tex'):
                     flist.append(os.path.join(root, fname))
         pool = mp.Pool(mp.cpu_count())
-        pool.map(flist, find_anchors_tex)
+        pool.map(find_anchors_tex, flist)
         pool.close()
         pool.join()
     elif args.json:

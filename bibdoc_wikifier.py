@@ -134,7 +134,7 @@ def main():
     parser.add_argument('data_path',
     help='Directory containing data.p and ranks.p from extractor')
     parser.add_argument('input_path',
-    help='Directory containing json\'d table of articles')
+    help='Directory containing articles')
     parser.add_argument('output_path',
     help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
 
@@ -146,7 +146,7 @@ def main():
     input_path = args.input_path
     output_path = args.output_path
     data_path = args.data_path
-    
+
     rank_path = os.path.join(data_path, 'topranks.tsv')
     topranks = {}
     with open(rank_path, 'r') as fp:

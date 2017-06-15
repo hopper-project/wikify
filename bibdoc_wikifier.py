@@ -1,17 +1,72 @@
 #######
 ## Bibdoc Wikifier
 ## This takes a file containing json'd bib-docs, and produces a table from bibcode to a list of top titles for that bibcode.
-## @author jmilbauer for Hopper Project @ UChicago
+## @author jmilbauer, jdhanoa for Hopper Project @ UChicago
 #######
 
-import cPickle as pickle
+import pickle
 import ahocorasick
 import sys, os
 import json
+import shutil
+from core.funcs import *
+import re
 
 globalcount = 0
 
-def find_anchors(json_file_path, output_path, anchor_list, topranks, ahc_automaton):
+def remove_latex(text):
+    text = clean_inline_math(text)
+    for match in grab_inline_math(text):
+        text = text.replace(match, "")
+    text = re.sub(non_capture_math, '', text)
+    text = re.sub(r'\\begin\{title\}(.+?)\\end\{title\}',r'\1',text)
+    text = re.sub(r'(?s)\\begin\{picture\}.+?\\end\{picture\}','',text)
+    text = re.sub(r'\\def.+','',text)
+    text = re.sub(r'\\section\*?\{(.+?)\}',r'\1',text)
+    text = re.sub(r'\\def.+|\\\@ifundefined.+|(?s)\\begin\{thebibliography\}.+?\\end\{thebibliography\}|(?s)\\begin\{eqnarray\*?\}.+?\\end\{eqnarray\*?\}|\\[\w@]+(?:\[.+?\])?(?:\{.+?\})*|\[.+?\](?:\{.+?\})?|\{cm\}','',text)
+    text = re.sub(r'\}','',text)
+    text = re.sub(r'\{','',text)
+    text = re.sub(r'\(\)','',text)
+    text = re.sub(r'\}','',text)
+    text = re.sub(r'\\','',text)
+    text = re.sub(r'\n{3,}','',text)
+    return text
+
+def stderr(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+def find_anchors_tex(file_path):
+    global topranks
+    global keywords
+    global automaton
+    ahc_automaton = automaton
+    topranks = keywords
+
+    if not file_path.endswith('.tex'):
+        return
+    with open(file_path,'r', encoding='latin-1') as fh:
+        text = fh.read()
+    haystack = remove_latex(grab_body(text))
+    article_anchors = {} # {anchor : freq}
+    for end_index, (anchor, title) in ahc_automaton.iter(haystack):
+        start_index = end_index-len(anchor)+1
+        if anchor in article_anchors.keys():
+            article_anchors[anchor] += 1
+        else:
+            article_anchors[anchor] = 1
+        assert haystack[start_index:start_index + len(anchor)] == anchor
+        assert title == topranks[anchor][0]
+    folder, fname = os.path.split(file_path)
+    output_path = os.path.join(output_path, fname)+
+    os.path.splitext(os.path.basename(file_path)))+'.tsv'
+    with open(output_path, 'w') as fh:
+        for anchor in article_anchors.keys():
+            fh.write("{}\t{}\t{}\t{}".format(bibcode, anchor,
+            article_anchors[anchor], topranks[anchor][1]))
+
+
+def find_anchors(json_file_path, output_path, anchor_list, topranks,
+                                                     ahc_automaton):
     if not json_file_path.endswith('.json'):
         return
     filename = os.path.basename(json_file_path)
@@ -36,7 +91,7 @@ def find_anchors(json_file_path, output_path, anchor_list, topranks, ahc_automat
         globalcount += 1
         if (globalcount % 5000 == 0):
             print("{} bibdocs processed.".format(globalcount))
-        
+
         bibcode = article["bibcode"]
         if "body" not in article.keys():
             fp.write("{}\tnone\tnone\tnone\tnone".format(bibcode))
@@ -67,8 +122,27 @@ def find_anchors(json_file_path, output_path, anchor_list, topranks, ahc_automat
 def pad_keyword(string):
     return " " + string + " "
 
-def main(data_path, input_path, output_path):
+def main():
+    global topranks
+    global automaton
+    global keywords
+
+    parser = argparse.ArgumentParser(
+    description='''Takes a file containing json\'d bib docs and returns a list
+    of top titles. One of either the --json or --tex flags must be specified'''
+    )
+    parser.add_argument('data_path',
+    help='Directory containing data.p and ranks.p from extractor')
+    parser.add_argument('input_path',
+    help='Directory containing json\'d table of articles')
+    parser.add_argument('output_path',
+    help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
     rank_path = os.path.join(data_path, 'topranks.tsv')
+    parser.add_argument('--json', action='store_true',
+    help='Specifies if the input is a JSON of articles')
+    parser.add_argument('--tex', action='store_true',
+    help='Specifies if the input is a folder of .tex files',)
+
     topranks = {}
     with open(rank_path, 'r') as fp:
         for line in fp:
@@ -85,62 +159,54 @@ def main(data_path, input_path, output_path):
         automaton.add_word(key, (key, topranks[key][0])) #keep in mind for mem reduction
     automaton.make_automaton()
 
-    allfiles = os.listdir(input_path)
-    allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
+    input_path = args.input_path
+    output_path = args.output_path
 
-    bibcode_map = {} #{bibcode : [(title, freq)]}
+    if args.tex:
+        shutil.copytree(input_path, output_path)
+        flist = []
+        for root, folders, files in os.walk(output_path):
+            for fname in files:
+                if fname.endswith('.tex'):
+                    flist.append(os.path.join(root, fname))
+        pool = mp.Pool(mp.cpu_count())
+        pool.map(flist, find_anchors_tex)
+        pool.close()
+        pool.join()
 
-        #freq will represent the TOTAL occurences of an anchor that mapped to the appropriate title
+    else if args.json:
+        allfiles = os.listdir(input_path)
+        allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
+        bibcode_map = {} #{bibcode : [(title, freq)]}
 
-    fp2 = open('bibdoc_wikifier_log.txt', 'w')
-    for path in allpaths:
-        fp2.write("About to process {}".format(path))
-        find_anchors(path, output_path, keywords, topranks, automaton)
-        fp2.write("\tCompleted {}\n".format(path))
-    fp2.close()
-    #     all_anchors += path_anchors
-    #
-    # result = {}
-    # for anchor in all_anchors:
-    #     title = topranks[anchor][0]
-    #     print("Found: {}, Incrementing: {}".format(anchor, title))
-    #     if title in result.keys():
-    #         result[title] += 1
-    #     else:
-    #         result[title] = 1
-    sys.exit(0)
+            #freq will represent the TOTAL occurences of an anchor that mapped to the appropriate title
 
-#get to the point where we can read the json bodies
-#test ahc, on a simple string; you can just copy-paste a body into the script.
-        #measure the time for loading ahc, time for loading topranks.
-#combine them
-#article -> [relevant substrings] (substr that are keys)
-#[relevant substrings] -> [top title for each]
-
-# don't need to load the whole hashmap
-# we should chunk arxiv articles
-    #
-
-#tsv:
-#       bibcode \t anchor \t anchorfreq \t title \t title freq
-
-        # 1       2           3   4           5
-        # 101010  math        20  mathematics 4905
-        # 101010  arithmetic  10  mathematics 300
+        fp2 = open('bibdoc_wikifier_log.txt', 'w')
+        for path in allpaths:
+            fp2.write("About to process {}".format(path))
+            find_anchors(path, output_path, keywords, topranks, automaton)
+            fp2.write("\tCompleted {}\n".format(path))
+        fp2.close()
+        #     all_anchors += path_anchors
+        #
+        # result = {}
+        # for anchor in all_anchors:
+        #     title = topranks[anchor][0]
+        #     print("Found: {}, Incrementing: {}".format(anchor, title))
+        #     if title in result.keys():
+        #         result[title] += 1
+        #     else:
+        #         result[title] = 1
+        sys.exit(0)
 
 
-
-
-if __name__ == '__main__':
-    if len(sys.argv) == 4:
-        data_path = sys.argv[1]
-        input_path = sys.argv[2]
-        output_path = sys.argv[3]
     else:
-        sys.stderr.write("Usage : python {} data_path input_path output_path\n"
-                         "\t* The data path should be a directory containing data.p and ranks.p from the extractor\n"
-                         "\t* The input path should be a directory containing the json'd tables of articles\n"
-                         "\t* The output path should be where you want a document containing the json'd extracted titles to be stored\n".format(sys.argv[0]))
+        stderr("Error: Must choose either tex or json flag")
         sys.exit(1)
-    all_anchors = {}
-    main(data_path, input_path, output_path)
+
+
+if sys.flags.interactive:
+    pass
+else:
+    if __name__=='__main__':
+        main()

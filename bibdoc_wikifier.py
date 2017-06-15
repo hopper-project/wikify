@@ -58,10 +58,11 @@ def find_anchors_tex(file_path):
         # assert haystack[start_index:start_index + len(anchor)] == anchor
         # assert title == topranks[anchor][0]
     folder, fname = os.path.split(file_path)
+    basename, ext = os.path.splitext(fname)
     output_path = os.path.join(folder, os.path.splitext(fname)[0]+'.tsv')
     with open(output_path, 'w') as fh:
         for anchor in article_anchors.keys():
-            fh.write("{}\t{}\t{}\t{}".format(bibcode, anchor,
+            fh.write("{}\t{}\t{}\t{}".format(basename, anchor,
             article_anchors[anchor], topranks[anchor][1]))
 
 

@@ -11,6 +11,7 @@ import json
 import shutil
 from core.funcs import *
 import re
+import argparse
 
 globalcount = 0
 
@@ -57,7 +58,7 @@ def find_anchors_tex(file_path):
         assert haystack[start_index:start_index + len(anchor)] == anchor
         assert title == topranks[anchor][0]
     folder, fname = os.path.split(file_path)
-    output_path = os.path.join(output_path, fname)+    os.path.splitext(os.path.basename(file_path)))+'.tsv'
+    output_path = os.path.join(output_path, fname)+os.path.splitext(os.path.basename(file_path))+'.tsv'
     with open(output_path, 'w') as fh:
         for anchor in article_anchors.keys():
             fh.write("{}\t{}\t{}\t{}".format(bibcode, anchor,
@@ -136,12 +137,17 @@ def main():
     help='Directory containing json\'d table of articles')
     parser.add_argument('output_path',
     help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
-    rank_path = os.path.join(data_path, 'topranks.tsv')
+
     parser.add_argument('--json', action='store_true',
     help='Specifies if the input is a JSON of articles')
     parser.add_argument('--tex', action='store_true',
     help='Specifies if the input is a folder of .tex files',)
-
+    args = parser.parse_args()
+    input_path = args.input_path
+    output_path = args.output_path
+    data_path = args.data_path
+    
+    rank_path = os.path.join(data_path, 'topranks.tsv')
     topranks = {}
     with open(rank_path, 'r') as fp:
         for line in fp:
@@ -158,8 +164,7 @@ def main():
         automaton.add_word(key, (key, topranks[key][0])) #keep in mind for mem reduction
     automaton.make_automaton()
 
-    input_path = args.input_path
-    output_path = args.output_path
+
 
     if args.tex:
         shutil.copytree(input_path, output_path)
@@ -172,8 +177,7 @@ def main():
         pool.map(flist, find_anchors_tex)
         pool.close()
         pool.join()
-
-    else if args.json:
+    elif args.json:
         allfiles = os.listdir(input_path)
         allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
         bibcode_map = {} #{bibcode : [(title, freq)]}
@@ -197,8 +201,6 @@ def main():
         #     else:
         #         result[title] = 1
         sys.exit(0)
-
-
     else:
         stderr("Error: Must choose either tex or json flag")
         sys.exit(1)

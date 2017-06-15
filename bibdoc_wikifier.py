@@ -41,7 +41,6 @@ def find_anchors_tex(file_path):
     global keywords
     global automaton
     ahc_automaton = automaton
-    topranks = keywords
 
     if not file_path.endswith('.tex'):
         return
@@ -64,6 +63,7 @@ def find_anchors_tex(file_path):
         for anchor in list(article_anchors.keys()):
             fh.write("{}\t{}\t{}\t{}".format(basename, anchor,
             article_anchors[anchor], topranks[anchor][1]))
+    os.remove(file_path)
 
 
 def find_anchors(json_file_path, output_path, anchor_list, topranks,
@@ -159,13 +159,11 @@ def main():
                 freq = contents[2]
                 topranks[anchor] = (title, freq)
 
-    keywords = topranks.keys()
+    keywords = list(topranks.keys())
     automaton = ahocorasick.Automaton()
     for key in keywords:
         automaton.add_word(key, (key, topranks[key][0])) #keep in mind for mem reduction
     automaton.make_automaton()
-
-
 
     if args.tex:
         shutil.copytree(input_path, output_path)

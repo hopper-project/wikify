@@ -10,18 +10,14 @@ def main():
     parser.add_argument('input_path',
     help='Path to directory containing ranks.p')
 
-    parser.add_argument('output_path',
-    help='Path to topranks.tsv output directory')
-
     args = parser.parse_args()
     data_path = args.input_path
-    output_path = args.output_path
 
     rank_path = os.path.join(data_path, 'ranks.p')
     with open(rank_path, 'rb') as fh:
         ranks = pickle.load(fh)
 
-    tsv_path = os.path.join(output_path, 'topranks.tsv')
+    tsv_path = os.path.join(data_path, 'topranks.tsv')
     with open(tsv_path, 'w') as fh:
         counter = 0
         for key in ranks.keys():

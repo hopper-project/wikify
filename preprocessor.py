@@ -124,8 +124,8 @@ def main():
     parser = argparse.ArgumentParser(
     description='Converts wikipedia XML dump to list of XML Files'
     )
-    parser.add_argument('input_path', help='Input directory')
-    parser.add_argument('output_dir', help='Path to directory of output folders')
+    parser.add_argument('input_path', help='Input (Wikipedia XML dump)')
+    parser.add_argument('output_dir', help='Path to directory for xml output')
     args = parser.parse_args()
     input_path = args.input_path
     output_dir = args.output_dir

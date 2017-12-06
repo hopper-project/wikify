@@ -9,12 +9,19 @@ import numpy as np
 import os
 
 def main():
-    parser = argparse.ArgumentParser(description='''Takes as an input a filelist of article_ids. For each article it reads its .wikified file and it uses its set of keywords (stored in a .keywords) to compute precision and recall''')
+    parser = argparse.ArgumentParser(description='''Takes as an input a list of sorted .tf-idf files.
+    The code assumes that tf-idf files generated from the compute_tf_idf.py step have been sorted.
+    For each article it uses its set of keywords (stored in a .keywords) to compute precision and recall.
+    Here is an example on how to sort based on the 10th column which contains the tf-aidf values:'
+    >ls *.tf-idf > 84tf_idf.fl
+    >cat 84tf_idf.fl | awk '{print "sort -t$\047\\t\047 -k10 -nr " $0 " > " $0 ".s10"}' | bash
+    >ls *.s10 > ./84tf_idf_sorted.fl
+    ''')
     parser.add_argument('-work_dir',
-                        default="/wikified",
+                        default="/Users/kriste/work/hopper/wikify/data/1000/84articles",
                         type=str, help='Directory containing data.p and ranks.p from extractor')
     parser.add_argument('-fl',
-                        default="tex.fl",
+                        default="84tf_idf_sorted.fl",
                         type=str, help='Directory containing articles')
 
     args = parser.parse_args()

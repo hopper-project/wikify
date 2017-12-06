@@ -15,16 +15,16 @@ def main():
     parser = argparse.ArgumentParser(
     description='''Reads .wikified files and computes tf-idf values using document frequency statistics from the article and Wikipedia colleciton''')
     parser.add_argument('-work_dir',
-                        default="/Users/kriste/work/hopper/wikify/data/1000/wikified",
+                        default="/Users/kriste/work/hopper/wikify/data/1000/84articles",
                         type=str, help='Directory containing data.p and ranks.p from extractor')
     parser.add_argument('-fl',
-                        default="84articles.fl",
+                        default="84wikified.fl",
                         type=str, help='Directory containing articles')
     parser.add_argument('-wiki_df',
                         default="/Users/kriste/work/hopper/wikify/data/para_document_AT_count_dict.pkl",
                         type=str, help='Directory containing articles')
     parser.add_argument('-article_df',
-                        default="tex.fl.df",
+                        default="84articles.fl.df",
                         type=str, help='Directory containing articles')
 
     args = parser.parse_args()

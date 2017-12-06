@@ -152,20 +152,17 @@ def main():
         description='''Takes a file containing json\'d bib docs and returns a list
     of top titles. One of either the --json or --tex flags must be specified'''
     )
-    parser.add_argument('-data_path',
-                        default="/Users/kriste/work/hopper/wikify/data",
+    parser.add_argument('-data_path', default="/Users/kriste/work/hopper/wikify/data",
                         type=str, help='Directory containing data.p and ranks.p from extractor')
-    parser.add_argument('-input_path',
-                        default="/Users/kriste/work/hopper/wikify/data/1000",
+    parser.add_argument('-input_path', default="/Users/kriste/work/hopper/wikify/data/1000",
                         type=str, help='Directory containing articles')
-    parser.add_argument('-fl',
-                        default="tex",
-                        type=str, help='Directory containing articles')
+    parser.add_argument('-fl', default="tex",
+                        type=str, help='List of articles you would like to wikify')
+    parser.add_argument('-output_path', default="/Users/kriste/work/hopper/wikify/data/1000/wikified",
+                        type=str, help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
 
-    parser.add_argument('-output_path',
-                        default="/Users/kriste/work/hopper/wikify/data/1000/wikified",
-                        type=str,
-                        help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
+    parser.add_argument('-df', default="none",
+                        type=str, help='Document frequency file. If none then a new df file is created.')
 
     args = parser.parse_args()
     input_path = args.input_path
@@ -173,6 +170,16 @@ def main():
     data_path = args.data_path
 
     anchor_df = dict()
+    if (args.df!="none"):
+        df_file = open(os.path.join(args.data_path,args.df),'r')
+        for line in df_file.readlines():
+            line = line.strip()
+            elem = line.split("\t")
+            anchor = elem[0]
+            df = int(elem[1])
+            anchor_df[anchor]=df
+        df_file.close()
+
     rank_path = os.path.join(data_path, 'topranks.tsv')
     topranks = {}
     with open(rank_path, 'r') as fp:

@@ -4,7 +4,6 @@
 ## @author jmilbauer, jdhanoa for Hopper Project @ UChicago
 ## Modified to account for keywords
 #######
-
 import ahocorasick
 import sys, os
 import json
@@ -14,7 +13,6 @@ import argparse
 import string
 globalcount = 0
 global anchor_df
-
 
 def remove_latex(text):
     text = clean_inline_math(text)
@@ -46,7 +44,6 @@ def remove_latex(text):
     text = re.sub(r'\n{3,}','',text)
     text = text.strip()
     return text
-
 def get_keywords(text):
     #copy of remove_latex and modified to account for the keywords field
     #TODO: Needs further cleaning of redundant code
@@ -77,7 +74,6 @@ def get_keywords(text):
     text = re.sub(pattern, "", text)
     text = re.sub(r'\n{3,}', '', text)
     return text
-
 
 def find_anchors_tex(file, automaton):
     global anchor_df
@@ -113,8 +109,8 @@ def find_anchors_tex(file, automaton):
     with open(file_path + '.txt3', mode='w', encoding='utf-8') as fh:
         fh.write(haystack)
     fh.close()
-    #print(haystack)
-    article_anchors = {}  #{anchor : freq}
+
+    article_anchors = {}
 
     for end_index, (anchor, title) in ahc_automaton.iter(haystack):
         start_index = end_index - len(anchor) + 1
@@ -154,11 +150,13 @@ def main():
     )
     parser.add_argument('-data_path', default="/Users/kriste/work/hopper/wikify/data",
                         type=str, help='Directory containing data.p and ranks.p from extractor')
-    parser.add_argument('-input_path', default="/Users/kriste/work/hopper/wikify/data/1000",
+    parser.add_argument('-input_path', default="/Users/kriste/work/hopper/wikify/data/1000/84articles",
+                        #default="/net/hopper/wikify/84articles",
                         type=str, help='Directory containing articles')
-    parser.add_argument('-fl', default="tex",
-                        type=str, help='List of articles you would like to wikify')
-    parser.add_argument('-output_path', default="/Users/kriste/work/hopper/wikify/data/1000/wikified",
+    parser.add_argument('-fl', default="84articles.fl",
+                        type=str, help='List of .tex articles you would like to wikify')
+    parser.add_argument('-output_path', default="/Users/kriste/work/hopper/wikify/data/1000/84articles",
+                        #default="/net/hopper/wikify/84articles/wikified"
                         type=str, help='The output path should be where you want a document containing the json\'d extracted titles to be stored')
 
     parser.add_argument('-df', default="none",
@@ -187,8 +185,6 @@ def main():
             contents = line.split('\t')
             #contents = line.split('###TAB###')
             if len(contents) == 3:
-                if (contents[0] == "dual norm"):
-                    bla = ""
                 anchor = pad_keyword(contents[0]).strip()
                 title = contents[1]
                 freq = contents[2].strip()
@@ -203,22 +199,19 @@ def main():
         automaton.add_word(key, (key, topranks[key][0]))  # keep in mind for mem reduction
     automaton.make_automaton()
 
-    actual_filename = args.fl + ".fl"
+    actual_filename = args.fl
 
     flist = []
     filelist = open(os.path.join(args.input_path, actual_filename), 'r')
     for fname in filelist.readlines():
         fname = fname.strip()
-
         flist.append(fname)
         find_anchors_tex(fname, automaton)
 
-    df_out = open(os.path.join(args.data_path, str(actual_filename) + ".df"), 'w')
-
+    df_out = open(os.path.join(args.input_path, str(actual_filename) + ".df"), 'w')
     for anchors in anchor_df.keys():
         df_out.write(anchors + "\t" + str(anchor_df[anchors]) + "\n")
     df_out.close()
-
 
 if sys.flags.interactive:
     pass

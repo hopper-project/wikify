@@ -70,16 +70,26 @@ bdoc = r"\\begin{document}"
 edoc = r"\\end{document}"
 
 body_pattern = r'(?s)\\begin{document}.*?\\end{document}'
-
+keyword_pattern = r'\\keywords\{.*?\}'
 # Functions used throughout the hoptex library go here
 
 def grab_body(text):
     text = remove_comments(text)
-    match = re.search(body_pattern,text)
+    #match = re.search(body_pattern,text)
+    match = text
+    if match:
+        #return match.group(0)
+        return match
+    else:
+        return ''
+
+def grab_keywords(text):
+    match = re.search(keyword_pattern,text)
     if match:
         return match.group(0)
     else:
         return ''
+
 
 def remove_inline_math(text):
     text = re.sub(inline_pattern,'',text)

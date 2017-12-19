@@ -10,6 +10,8 @@ import argparse
 #Pipeline:
 #Directory -> [Subfiles] -> [[Pairs]] -> merge it up
 
+# input: xml text of a given page
+# output: list of (anchor, title) tuples in page
 def extract_links(text):
     results = []
 
@@ -70,10 +72,13 @@ def extract_links(text):
 
     return results
 
+# returns list of (anchor, title) tuples in file
 def processFile(filepath):
     fp = open(filepath)
     text = fp.read()
     fp.close()
+
+    # anchor_title_map = [(anchor, title), ...]
     anchor_title_map = extract_links(text)
     print("Processed: {}".format(filepath))
     return anchor_title_map
@@ -81,6 +86,8 @@ def processFile(filepath):
 def flatten_list(list):
     return [item for sublist in list for item in sublist]
 
+# converts list of (anchor, title)
+# to dict[anchor] = {title1:count1, title2:count2}
 def build_hashmap(pairs):
     #print(pairs)
     result = {}
@@ -95,6 +102,8 @@ def build_hashmap(pairs):
     #print(result)
     return result
 
+# converts dict[anchor] = {title1:count1, title2:count2}
+# to dict[anchor] = title_with_highest_count
 def build_ranking(dictionary):
     result = {} #From key to ordered list.
     for key in dictionary.keys():
@@ -104,26 +113,40 @@ def build_ranking(dictionary):
         result[key] = sorted_tuples
     return result
 
+# def get_math_titles_list(anchor_title_map):
+#     math_titles = []
+
+#     for anchor, title_count_dict in anchor_title_map.items():
+#         for title, count in title_count_dict.items():
+#             math_titles.append(title.lower())
+
+#     math_titles = list(set(math_titles))
+#     return math_titles
 
 def main():
     parser = argparse.ArgumentParser(
-    description='Converts xml wikipedia dump files to maps'
-    )
+        description='Converts xml wikipedia dump files to maps')
+
     parser.add_argument('input_path',
-    help='Input directory of wikipedia dump files from preprocessor.py')
+        help='Input directory of wikipedia dump files from preprocessor.py')
     parser.add_argument('output_path',
-    help='Directory to store the extracted maps')
+        help='Directory to store the extracted maps')
     args = parser.parse_args()
+    
     input_path = args.input_path
     output_path = args.output_path
+    
+    # create output dir if needed
     if not os.path.exists(output_path):
         os.makedirs(output_path)
+    
+    # list of paths for all math articles
     allfiles = os.listdir(input_path)
     allpaths = map(lambda x: os.path.join(input_path, x), allfiles)
+    
     pool = mp.Pool(processes = mp.cpu_count())
 
     all_anchors = {}
-
     shallow_articles = pool.map(processFile, allpaths)
 
     merged_articles = flatten_list(shallow_articles) #[[(anchor, title)]] -> [(anchor, title)]
@@ -131,26 +154,29 @@ def main():
 
     ranking = build_ranking(anchor_title_map)
 
-    #STORE THE MASTER DICTIONARY
+    # save anchor_title_map as data.p
     dict_path = os.path.join(output_path, 'data.p')
-#    print(anchor_title_map)
-    fp = open(dict_path, 'wb')
-    pickle.dump(anchor_title_map, fp)
-    fp.close()
-    #STORE THE RANKING
+    with open(dict_path, 'wb') as fp:
+        pickle.dump(anchor_title_map, fp)
+
+    # save the ranking dict as ranks.p
     rank_path = os.path.join(output_path, 'ranks.p')
-#    print(ranking)
-    fp = open(rank_path, 'wb')
-    pickle.dump(ranking, fp)
-    fp.close()
+    with open(rank_path, 'wb') as fp:
+        pickle.dump(ranking, fp)
+
+    # math_titles = get_math_titles_list(anchor_title_map)
+    # # save the math titles list as math_titles.p
+    # math_path = os.path.join(output_path, 'math_titles.p')
+    # with open(math_path, 'wb') as fp:
+    #     pickle.dump(math_titles, fp)
 
     pool.close()
     pool.join()
 
-    sys.exit(0)
 
 if sys.flags.interactive:
     pass
 else:
     if __name__=='__main__':
         main()
+

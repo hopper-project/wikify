@@ -5,31 +5,37 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(
-    description='Generates topranks.tsv file from ranks.p file'
-    )
+        description='Generates topranks.tsv file from ranks.p file')
     parser.add_argument('input_path',
-    help='Path to directory containing ranks.p')
+        help='Path to directory containing ranks.p')
 
     args = parser.parse_args()
-    data_path = args.input_path
+    input_path = args.input_path
 
-    rank_path = os.path.join(data_path, 'ranks.p')
+    # open ranks.p
+    rank_path = os.path.join(input_path, 'ranks.p')
     with open(rank_path, 'rb') as fh:
         ranks = pickle.load(fh)
 
-    tsv_path = os.path.join(data_path, 'topranks.tsv')
+    # create topranks.tsv file
+    tsv_path = os.path.join(input_path, 'topranks.tsv')
+    
     with open(tsv_path, 'w') as fh:
         counter = 0
+        
+        # key = article
         for key in ranks.keys():
-            if not counter==0:
+            if counter != 0:
                 topchoice = ranks[key][0]
                 toptitle = topchoice[0]
                 topfreq  = topchoice[1]
+
+                # write article, title, freq
                 fh.write("{}\t{}\t{}\n".format(key, toptitle, topfreq))
-                if counter % 1000 == 0:
-                    print(counter)
+                
+                if counter % 10000 == 0:
+                    print('rows processed = ', counter)
             counter += 1
-    sys.exit(0)
 
 if sys.flags.interactive:
     pass
